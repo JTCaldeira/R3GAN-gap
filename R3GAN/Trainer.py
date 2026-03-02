@@ -11,12 +11,19 @@ class AdversarialTraining:
         Gradient, = torch.autograd.grad(outputs=Critics.sum(), inputs=Samples, create_graph=True)
         return Gradient.square().sum([1, 2, 3])
         
-    def AccumulateGeneratorGradients(self, Noise, RealSamples, Conditions, Scale=1, Preprocessor=lambda x: x):
+    def AccumulateGeneratorGradients(self, Noise, RealSamples, Conditions, Scale=1, Preprocessor=lambda x: x, do_gap_stuff=False):
         FakeSamples = self.Generator(Noise, Conditions)
         RealSamples = RealSamples.detach()
         
         FakeLogits = self.Discriminator(Preprocessor(FakeSamples), Conditions)
         RealLogits = self.Discriminator(Preprocessor(RealSamples), Conditions)
+
+        if self.D.gap and do_gap_stuff:
+            with torch.no_grad():
+                fake_logits = self.Discriminator(FakeSamples, Conditions)
+                real_logits = self.Discriminator(RealSamples, Conditions)
+                self.D.gap.update_fake_ema(fake_logits.detach().cpu().numpy(), Conditions.detach().cpu().numpy())
+                self.D.gap.update_real_ema(real_logits.detach().cpu().numpy(), Conditions.detach().cpu().numpy())
         
         RelativisticLogits = FakeLogits - RealLogits
         AdversarialLoss = nn.functional.softplus(-RelativisticLogits)
@@ -25,12 +32,19 @@ class AdversarialTraining:
         
         return [x.detach() for x in [AdversarialLoss, RelativisticLogits]]
     
-    def AccumulateDiscriminatorGradients(self, Noise, RealSamples, Conditions, Gamma, Scale=1, Preprocessor=lambda x: x, do_reg=True, reg_interval=1):
+    def AccumulateDiscriminatorGradients(self, Noise, RealSamples, Conditions, Gamma, Scale=1, Preprocessor=lambda x: x, do_reg=True, reg_interval=1, do_gap_stuff=False):
         RealSamples = RealSamples.detach().requires_grad_(True)
         FakeSamples = self.Generator(Noise, Conditions).detach().requires_grad_(True)
 
         RealLogits = self.Discriminator(Preprocessor(RealSamples), Conditions)
         FakeLogits = self.Discriminator(Preprocessor(FakeSamples), Conditions)
+
+        if self.D.gap and do_gap_stuff:
+            with torch.no_grad():
+                fake_logits = self.Discriminator(FakeSamples, Conditions)
+                real_logits = self.Discriminator(RealSamples, Conditions)
+                self.D.gap.update_fake_ema(fake_logits.detach().cpu().numpy(), Conditions.detach().cpu().numpy())
+                self.D.gap.update_real_ema(real_logits.detach().cpu().numpy(), Conditions.detach().cpu().numpy())
 
         RelativisticLogits = RealLogits - FakeLogits
         AdversarialLoss = nn.functional.softplus(-RelativisticLogits)

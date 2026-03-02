@@ -140,6 +140,14 @@ def parse_comma_separated_list(s):
 @click.option('--d-batch-gpu',  help='Limit batch size per GPU for D', metavar='INT',           type=click.IntRange(min=1))
 @click.option('--reg-interval', help='R1 and R2 regularization every N batches', metavar='INT', type=click.IntRange(min=1), default=1)
 
+# Class-Wise Discriminator-Guided Regularization.
+@click.option('--gap',          help="Blah", metavar='BOOL',                                    type=bool, default=False)
+@click.option('--gap_ens',      help="Blah", metavar='BOOL',                                    type=bool, default=False)
+@click.option('--gap_ema_decay',help="Blah",                                                    type=float, default=0.98)
+@click.option('--gap_freq',     help="Blah", metavar='INT',                                     type=int, default=4)
+@click.option('--gap_lambda',   help="Blah",                                                    type=float, default=3e-7)
+@click.option('--gap_start',    help="Blah", metavar='KIMG',                                    type=int, default=1000)
+
 # Misc settings.
 @click.option('--desc',         help='String to include in result dir name', metavar='STR',     type=str)
 @click.option('--metrics',      help='Quality metrics', metavar='[NAME|A,B,C|none]',            type=parse_comma_separated_list, default='fid50k_full', show_default=True)
@@ -311,6 +319,16 @@ def main(**kwargs):
     c.data_loader_kwargs.num_workers = opts.workers
     c.wandb_projname = opts.wandb_projname
     c.wandb_groupname = opts.wandb_groupname
+
+    # CW-DG regularizer.
+    c.use_gap_loss = opts.gap
+    c.gap_ens = opts.gap_ens
+    c.gap_ema_decay = opts.gap_ema_decay
+    c.gap_freq = opts.gap_freq
+    c.gap_lambda = opts.gap_lambda
+    c.gap_start = opts.gap_start
+    if opts.gap:
+        desc += f'-gap:ens{+(opts.gap_ens)}-decay{gap_ema_decay}-freq{gap_freq}-kimg{gap_start}-lam{gap_lambda}'
 
     # Sanity checks.
     if c.batch_size % c.num_gpus != 0:

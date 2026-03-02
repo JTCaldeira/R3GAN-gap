@@ -25,6 +25,7 @@ from torch_utils.ops import grid_sample_gradfix
 
 import legacy
 from metrics import metric_main
+from training.gap import Gap
 
 def cosine_decay_with_warmup(cur_nimg, base_value, total_nimg, final_value=0.0, warmup_value=0.0, warmup_nimg=0, hold_base_value_nimg=0):
     decay = 0.5 * (1 + np.cos(np.pi * (cur_nimg - warmup_nimg - hold_base_value_nimg) / float(total_nimg - warmup_nimg - hold_base_value_nimg)))
@@ -149,6 +150,12 @@ def training_loop(
     progress_fn             = None,     # Callback function for updating training progress. Called for all ranks.
     wandb_projname          = None,     # Name of the project for wandb logging.
     wandb_groupname         = None,     # Name of the wandb group in which to include this run.
+    use_gap_loss            = None,
+    gap_ens                 = None,
+    gap_ema_decay           = None,
+    gap_freq                = None,
+    gap_lambda              = None,
+    gap_start               = None,
 ):
     # Initialize.
     start_time = time.time()
@@ -181,6 +188,24 @@ def training_loop(
     G = dnnlib.util.construct_class_by_name(**G_kwargs, **common_kwargs).train().requires_grad_(False).to(device) # subclass of torch.nn.Module
     D = dnnlib.util.construct_class_by_name(**D_kwargs, **common_kwargs).train().requires_grad_(False).to(device) # subclass of torch.nn.Module
     G_ema = copy.deepcopy(G).eval()
+
+    if use_gap_loss:
+        effective_n_samples = None
+        if gap_ens:
+            # Label counts, not sorted by class or amount of samples
+            label_counts = training_set.get_label_counts(sort=False)
+            # Get label counts sorted by class (the dict key), NOT by amount of samples
+            label_counts = list(dict(sorted(label_counts.items())).values())
+            e_n = np.array([(1 - 0.99**n) / (1 - 0.99) for n in label_counts])
+            k = training_set.label_dim / np.sum(1 / e_n)
+            effective_num_samples = torch.tensor(k / e_n, dtype=torch.float32).to(rank).reshape(-1, 1)
+
+        D.gap = Gap(
+            training_set.label_dim,
+            effective_n_samples,
+            gap_ema_decay,
+            dnnlib.util.get_interesting_classes(training_set.get_label_counts(sort=True))
+        )
 
     # Resume from existing pickle.
     if resume_pkl is not None:
@@ -280,6 +305,7 @@ def training_loop(
     if rank == 0:
         print(f'Training for {total_kimg} kimg...')
         print()
+    n_iter = 0
     cur_nimg = resume_data['cur_nimg'] if resume_pkl is not None else 0
     cur_tick = 0
     tick_start_nimg = cur_nimg
@@ -346,6 +372,7 @@ def training_loop(
                     gain=num_gpus * phase.batch_gpu / batch_size,
                     cur_nimg=cur_nimg,
                     batch_size=batch_size,
+                    do_gap_stuff=use_gap_loss and n_iter % gap_freq == 0
                 )
             phase.module.requires_grad_(False)
         
@@ -381,6 +408,12 @@ def training_loop(
         # Update state.
         cur_nimg += batch_size
         batch_idx += 1
+
+        if use_gap_loss:
+            # Gap start is defined in terms of kimg.
+            D.gap.started = (cur_nimg // 1000) >= gap_start
+
+        n_iter += 1
 
         # Perform maintenance tasks once per tick.
         done = (cur_nimg >= total_kimg * 1000)

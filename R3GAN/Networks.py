@@ -151,7 +151,7 @@ class Generator(nn.Module):
         return self.AggregationLayer(x)
     
 class Discriminator(nn.Module):
-    def __init__(self, WidthPerStage, CardinalityPerStage, BlocksPerStage, ExpansionFactor, ConditionDimension=None, ConditionEmbeddingDimension=0, KernelSize=3, ResamplingFilter=[1, 2, 1]):
+    def __init__(self, WidthPerStage, CardinalityPerStage, BlocksPerStage, ExpansionFactor, ConditionDimension=None, ConditionEmbeddingDimension=0, KernelSize=3, ResamplingFilter=[1, 2, 1], gap=None):
         super(Discriminator, self).__init__()
         
         VarianceScalingParameter = sum(BlocksPerStage)
@@ -163,7 +163,9 @@ class Discriminator(nn.Module):
         
         if ConditionDimension is not None:
             self.EmbeddingLayer = MSRInitializer(nn.Linear(ConditionDimension, ConditionEmbeddingDimension, bias=False), ActivationGain=1 / math.sqrt(ConditionEmbeddingDimension))
-        
+
+        self.gap = gap
+
     def forward(self, x, y=None):
         x = self.ExtractionLayer(x.to(self.MainLayers[0].DataType))
         
