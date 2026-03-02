@@ -229,6 +229,27 @@ def is_pickleable(obj: Any) -> bool:
     except:
         return False
 
+# Maximum number of classes whose (miscellaneous) statistics to track.
+_MAX_CLASSES = 20
+
+def get_interesting_classes(label_counts_sorted):
+    """Returns 5 head, 5 middle, and 10 tail classes in case the number of classes
+    is too high to tractably gather training statistics about (e.g., greater than 20).
+    """
+    n_classes = len(label_counts_sorted)
+    class_labels = list(label_counts_sorted.keys())
+
+    # Limit tracking to a fixed number of classes.
+    if n_classes > _MAX_CLASSES:
+        middle = min(n_classes // 2, n_classes -  13)
+        out = class_labels[:5] + \
+            class_labels[middle-2 : middle+3] + \
+            class_labels[-10:]
+        assert len(out) == _MAX_CLASSES
+        return out
+    else:
+        return class_labels
+
 
 # Functionality to import modules/objects by name, and call functions by name
 # ------------------------------------------------------------------------------------------
