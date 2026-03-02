@@ -320,16 +320,6 @@ def main(**kwargs):
     c.wandb_projname = opts.wandb_projname
     c.wandb_groupname = opts.wandb_groupname
 
-    # CW-DG regularizer.
-    c.use_gap_loss = opts.gap
-    c.gap_ens = opts.gap_ens
-    c.gap_ema_decay = opts.gap_ema_decay
-    c.gap_freq = opts.gap_freq
-    c.gap_lambda = opts.gap_lambda
-    c.gap_start = opts.gap_start
-    if opts.gap:
-        desc += f'-gap:ens{+(opts.gap_ens)}-decay{gap_ema_decay}-freq{gap_freq}-kimg{gap_start}-lam{gap_lambda}'
-
     # Sanity checks.
     if c.batch_size % c.num_gpus != 0:
         raise click.ClickException('--batch must be a multiple of --gpus')
@@ -355,6 +345,16 @@ def main(**kwargs):
     desc = f'{dataset_name:s}-gpus{c.num_gpus:d}-batch{c.batch_size:d}'
     if opts.desc is not None:
         desc += f'-{opts.desc}'
+
+    # CW-DG regularizer.
+    c.use_gap_loss = opts.gap
+    c.gap_ens = opts.gap_ens
+    c.gap_ema_decay = opts.gap_ema_decay
+    c.gap_freq = opts.gap_freq
+    c.gap_lambda = opts.gap_lambda
+    c.gap_start = opts.gap_start
+    if opts.gap:
+        desc += f'-gap:ens{+(opts.gap_ens)}-decay{gap_ema_decay}-freq{gap_freq}-kimg{gap_start}-lam{gap_lambda}'
 
     # Launch.
     launch_training(c=c, desc=desc, outdir=opts.outdir, dry_run=opts.dry_run)
