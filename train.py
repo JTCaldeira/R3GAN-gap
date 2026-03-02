@@ -354,7 +354,7 @@ def main(**kwargs):
     c.gap_lambda = opts.gap_lambda
     c.gap_start = opts.gap_start
     if opts.gap:
-        desc += f'-gap:ens{+(opts.gap_ens)}-decay{gap_ema_decay}-freq{gap_freq}-kimg{gap_start}-lam{gap_lambda}'
+        desc += f'-gap:ens{+(opts.gap_ens)}-decay{opts.gap_ema_decay}-freq{opts.gap_freq}-kimg{opts.gap_start}-lam{opts.gap_lambda}'
 
     # Launch.
     launch_training(c=c, desc=desc, outdir=opts.outdir, dry_run=opts.dry_run)

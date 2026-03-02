@@ -19,7 +19,7 @@ class Gap(torch.nn.Module):
     def update_fake_ema(self, gen_logits, gen_classes):
         for logit, c in zip(gen_logits, gen_classes.astype(bool)):
             # Update EMA of discriminator outputs for fake images
-            self.ema_fake[c] = logit[0] + self.ema_decay * (self.ema_fake[c] - logit[0])
+            self.ema_fake[c] = logit + self.ema_decay * (self.ema_fake[c] - logit)
 
         n_digits = len(str(max(self.classes_to_log)))
         for c in self.classes_to_log:
@@ -28,7 +28,7 @@ class Gap(torch.nn.Module):
     def update_real_ema(self, real_logits, real_classes):
         for logit, c in zip(real_logits, real_classes.astype(bool)):
             # Update EMA of discriminator outputs for real images
-            self.ema_real[c] = logit[0] + self.ema_decay * (self.ema_real[c] - logit[0])
+            self.ema_real[c] = logit + self.ema_decay * (self.ema_real[c] - logit)
 
         n_digits = len(str(max(self.classes_to_log)))
         for c in self.classes_to_log:

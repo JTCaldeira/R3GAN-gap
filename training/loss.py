@@ -25,7 +25,7 @@ class R3GANLoss:
 
     def accumulate_gradients(self, phase, real_img, real_c, gen_z, gamma, gain, cur_nimg=0, batch_size=1, do_gap_stuff=False):
         if phase == 'G':
-            AdversarialLoss, RelativisticLogits, fake_logits, real_logits = self.trainer.AccumulateGeneratorGradients(gen_z, real_img, real_c, gain, self.preprocessor, do_gap_stuff=do_gap_stuff)
+            AdversarialLoss, RelativisticLogits = self.trainer.AccumulateGeneratorGradients(gen_z, real_img, real_c, gain, self.preprocessor, do_gap_stuff=do_gap_stuff)
 
             training_stats.report('Loss/scores/fake', RelativisticLogits)
             training_stats.report('Loss/signs/fake', RelativisticLogits.sign())
@@ -33,7 +33,7 @@ class R3GANLoss:
 
         if phase == 'D':
             do_reg = (cur_nimg % (self.reg_interval * batch_size) < batch_size)
-            AdversarialLoss, RelativisticLogits, R1Penalty, R2Penalty, fake_logits, real_logits = self.trainer.AccumulateDiscriminatorGradients(
+            AdversarialLoss, RelativisticLogits, R1Penalty, R2Penalty = self.trainer.AccumulateDiscriminatorGradients(
                 gen_z, real_img, real_c, gamma, gain, self.preprocessor,
                 do_reg=do_reg, reg_interval=self.reg_interval, do_gap_stuff=do_gap_stuff
             )

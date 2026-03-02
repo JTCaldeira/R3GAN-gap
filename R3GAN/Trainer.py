@@ -18,12 +18,12 @@ class AdversarialTraining:
         FakeLogits = self.Discriminator(Preprocessor(FakeSamples), Conditions)
         RealLogits = self.Discriminator(Preprocessor(RealSamples), Conditions)
 
-        if self.D.gap and do_gap_stuff:
+        if self.Discriminator.gap and do_gap_stuff:
             with torch.no_grad():
                 fake_logits = self.Discriminator(FakeSamples, Conditions)
                 real_logits = self.Discriminator(RealSamples, Conditions)
-                self.D.gap.update_fake_ema(fake_logits.detach().cpu().numpy(), Conditions.detach().cpu().numpy())
-                self.D.gap.update_real_ema(real_logits.detach().cpu().numpy(), Conditions.detach().cpu().numpy())
+                self.Discriminator.gap.update_fake_ema(fake_logits.detach().cpu().numpy(), Conditions.detach().cpu().numpy())
+                self.Discriminator.gap.update_real_ema(real_logits.detach().cpu().numpy(), Conditions.detach().cpu().numpy())
         
         RelativisticLogits = FakeLogits - RealLogits
         AdversarialLoss = nn.functional.softplus(-RelativisticLogits)
@@ -39,12 +39,12 @@ class AdversarialTraining:
         RealLogits = self.Discriminator(Preprocessor(RealSamples), Conditions)
         FakeLogits = self.Discriminator(Preprocessor(FakeSamples), Conditions)
 
-        if self.D.gap and do_gap_stuff:
+        if self.Discriminator.gap and do_gap_stuff:
             with torch.no_grad():
                 fake_logits = self.Discriminator(FakeSamples, Conditions)
                 real_logits = self.Discriminator(RealSamples, Conditions)
-                self.D.gap.update_fake_ema(fake_logits.detach().cpu().numpy(), Conditions.detach().cpu().numpy())
-                self.D.gap.update_real_ema(real_logits.detach().cpu().numpy(), Conditions.detach().cpu().numpy())
+                self.Discriminator.gap.update_fake_ema(fake_logits.detach().cpu().numpy(), Conditions.detach().cpu().numpy())
+                self.Discriminator.gap.update_real_ema(real_logits.detach().cpu().numpy(), Conditions.detach().cpu().numpy())
 
         RelativisticLogits = RealLogits - FakeLogits
         AdversarialLoss = nn.functional.softplus(-RelativisticLogits)
