@@ -142,7 +142,7 @@ def parse_comma_separated_list(s):
 
 # Class-Wise Discriminator-Guided Regularization.
 @click.option('--gap',          help="Blah", metavar='BOOL',                                    type=bool, default=False)
-@click.option('--gap_ens',      help="Blah", metavar='BOOL',                                    type=bool, default=False)
+@click.option('--gap_ens',      help="Blah", metavar='BOOL',                                    type=bool, default=True)
 @click.option('--gap_ema_decay',help="Blah",                                                    type=float, default=0.98)
 @click.option('--gap_freq',     help="Blah", metavar='INT',                                     type=int, default=4)
 @click.option('--gap_lambda',   help="Blah",                                                    type=float, default=3e-7)
