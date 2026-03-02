@@ -109,6 +109,31 @@ class Dataset(torch.utils.data.Dataset):
         d.raw_label = self._get_raw_labels()[d.raw_idx].copy()
         return d
 
+    def get_idxs_per_label(self):
+        assert self._use_labels is True
+
+        if self._imgs_per_label is not None:
+            return self._imgs_per_label
+
+        self._imgs_per_label = {}
+        if self._xflip[-1] == 1:
+            labels = np.tile(self._raw_labels, 2)
+        else:
+            labels = self._get_raw_labels()#self._raw_labels
+        
+        for label in range(self.label_dim):
+            self._imgs_per_label[label] = self._raw_idx[labels == label]
+
+        return self._imgs_per_label
+
+    def get_label_counts(self, sort=False, reverse=True):
+        label_counts = {label: idxs.size
+            for label, idxs in self.get_idxs_per_label().items()}
+        if sort:
+            label_counts = {label: count for label, count in
+                sorted(label_counts.items(), key=lambda item: item[1], reverse=reverse)}
+        return label_counts
+
     @property
     def name(self):
         return self._name
