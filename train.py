@@ -185,6 +185,10 @@ def main(**kwargs):
         CardinalityPerStage = [3 * x for x in [32, 32, 32, 32, 16]]
         FP16Stages = [-1, -2, -3, -4]
         NoiseDimension = 64
+
+        if opts.cond:
+            c.G_kwargs.ConditionEmbeddingDimension = NoiseDimension
+            c.D_kwargs.ConditionEmbeddingDimension = WidthPerStage[0]
        
         ema_nimg = 500 * 1000
         decay_nimg = 2e7
